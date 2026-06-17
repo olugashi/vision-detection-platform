@@ -1,3 +1,11 @@
+import {
+  Box,
+  Chip,
+  LinearProgress,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material'
 import { Detection } from '../App'
 
 interface DetectionListProps {
@@ -5,58 +13,93 @@ interface DetectionListProps {
   counts_by_class: Record<string, number>
 }
 
-const CLASS_COLOR_MAP: Record<string, string> = {
-  person: 'person',
-  car: 'car',
-  truck: 'truck',
-  bus: 'bus',
-  motorcycle: 'motorcycle',
-  bicycle: 'bicycle',
-  airplane: 'airplane',
-  boat: 'boat',
+const CLASS_COLORS: Record<string, string> = {
+  person:     '#FF4444',
+  car:        '#4444FF',
+  truck:      '#FF8800',
+  bus:        '#8800FF',
+  motorcycle: '#00AA00',
+  bicycle:    '#00AAAA',
+  airplane:   '#DCDC00',
+  boat:       '#FF69B4',
 }
 
-function getColorKey(className: string): string {
-  return CLASS_COLOR_MAP[className] ?? 'default'
+const CLASS_LABELS: Record<string, string> = {
+  person:     'אדם',
+  car:        'רכב',
+  truck:      'משאית',
+  bus:        'אוטובוס',
+  motorcycle: 'אופנוע',
+  bicycle:    'אופניים',
+  airplane:   'מטוס',
+  boat:       'סירה',
+}
+
+function colorFor(cls: string) {
+  return CLASS_COLORS[cls] ?? '#7777aa'
 }
 
 export default function DetectionList({ detections, counts_by_class }: DetectionListProps) {
   return (
-    <div>
-      <h2 className="detection-title">זיהויים</h2>
+    <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
+      <Typography variant="subtitle2" color="text.secondary" mb={2}>
+        זיהויים ({detections.length})
+      </Typography>
 
-      {/* Badges for class counts */}
-      <div className="badges-row">
+      {/* Class count chips */}
+      <Stack direction="row" flexWrap="wrap" gap={1} mb={3}>
         {Object.entries(counts_by_class).map(([cls, count]) => (
-          <span key={cls} className={`badge badge-${getColorKey(cls)}`}>
-            {cls} &times; {count}
-          </span>
+          <Chip
+            key={cls}
+            label={`${CLASS_LABELS[cls] ?? cls} × ${count}`}
+            size="small"
+            sx={{
+              bgcolor: colorFor(cls),
+              color: '#fff',
+              fontWeight: 600,
+            }}
+          />
         ))}
-      </div>
+      </Stack>
 
-      {/* Detection items */}
+      {/* Detection list */}
       {detections.length === 0 ? (
-        <p style={{ color: '#666699' }}>לא נמצאו זיהויים.</p>
+        <Typography color="text.disabled" variant="body2">לא נמצאו זיהויים.</Typography>
       ) : (
-        detections.map((det, idx) => {
-          const colorKey = getColorKey(det.class_name)
-          const pct = Math.round(det.confidence * 100)
-          return (
-            <div key={idx} className="detection-item">
-              <div className="detection-item-header">
-                <span className="detection-class">{det.class_name}</span>
-                <span className="detection-confidence">{pct}%</span>
-              </div>
-              <div className="confidence-bar-bg">
-                <div
-                  className={`confidence-bar-fill bar-${colorKey}`}
-                  style={{ width: `${pct}%` }}
+        <Stack spacing={1.5}>
+          {detections.map((det, idx) => {
+            const pct = Math.round(det.confidence * 100)
+            const color = colorFor(det.class_name)
+            const label = CLASS_LABELS[det.class_name] ?? det.class_name
+            return (
+              <Box
+                key={idx}
+                sx={{
+                  bgcolor: 'action.hover',
+                  borderRadius: 1,
+                  p: 1.5,
+                  borderRight: `4px solid ${color}`,
+                }}
+              >
+                <Box display="flex" justifyContent="space-between" mb={0.5}>
+                  <Typography variant="body2" fontWeight={600}>{label}</Typography>
+                  <Typography variant="body2" color="text.secondary">{pct}%</Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={pct}
+                  sx={{
+                    height: 6,
+                    borderRadius: 3,
+                    bgcolor: 'action.selected',
+                    '& .MuiLinearProgress-bar': { bgcolor: color },
+                  }}
                 />
-              </div>
-            </div>
-          )
-        })
+              </Box>
+            )
+          })}
+        </Stack>
       )}
-    </div>
+    </Paper>
   )
 }

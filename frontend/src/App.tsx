@@ -1,8 +1,28 @@
 import { useState } from 'react'
 import axios from 'axios'
+import {
+  Box,
+  CircularProgress,
+  Container,
+  CssBaseline,
+  Grid,
+  ThemeProvider,
+  Typography,
+  createTheme,
+} from '@mui/material'
+import { CenterFocusStrong } from '@mui/icons-material'
 import UploadZone from './components/UploadZone'
 import ResultImage from './components/ResultImage'
 import DetectionList from './components/DetectionList'
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: { main: '#7c4dff' },
+    background: { default: '#0d1117', paper: '#161b22' },
+  },
+  direction: 'rtl',
+})
 
 export interface BBox {
   x: number
@@ -29,13 +49,13 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<DetectionResult | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleFile = async (selected: File) => {
     setFile(selected)
     setResult(null)
-    const objectUrl = URL.createObjectURL(selected)
-    setPreview(objectUrl)
-
+    setError(null)
+    setPreview(URL.createObjectURL(selected))
     setLoading(true)
     try {
       const formData = new FormData()
@@ -46,43 +66,56 @@ export default function App() {
         { headers: { 'Content-Type': 'multipart/form-data' } }
       )
       setResult(response.data)
-    } catch (err) {
-      console.error('Detection failed:', err)
+    } catch {
+      setError('שגיאה בזיהוי. ודא שה-backend פועל.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="app">
-      <h1 className="app-title">מערכת זיהוי אובייקטים</h1>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        {/* Header */}
+        <Box display="flex" alignItems="center" gap={1.5} mb={4}>
+          <CenterFocusStrong sx={{ fontSize: 36, color: 'primary.main' }} />
+          <Typography variant="h4" fontWeight={700}>
+            מערכת זיהוי אובייקטים
+          </Typography>
+        </Box>
 
-      <div className="card">
+        {/* Upload */}
         <UploadZone onFile={handleFile} preview={preview} file={file} />
-      </div>
 
-      {loading && (
-        <div className="card">
-          <div className="spinner-wrapper">
-            <div className="spinner" />
-            <span className="spinner-label">מזהה אובייקטים...</span>
-          </div>
-        </div>
-      )}
+        {/* Loading */}
+        {loading && (
+          <Box display="flex" alignItems="center" justifyContent="center" gap={2} mt={4}>
+            <CircularProgress size={28} />
+            <Typography color="text.secondary">מזהה אובייקטים...</Typography>
+          </Box>
+        )}
 
-      {result && !loading && (
-        <div className="results-grid">
-          <div className="card">
-            <ResultImage base64={result.annotated_image} />
-          </div>
-          <div className="card">
-            <DetectionList
-              detections={result.detections}
-              counts_by_class={result.counts_by_class}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+        {/* Error */}
+        {error && !loading && (
+          <Typography color="error" mt={3} textAlign="center">{error}</Typography>
+        )}
+
+        {/* Results */}
+        {result && !loading && (
+          <Grid container spacing={3} mt={1}>
+            <Grid item xs={12} md={8}>
+              <ResultImage base64={result.annotated_image} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <DetectionList
+                detections={result.detections}
+                counts_by_class={result.counts_by_class}
+              />
+            </Grid>
+          </Grid>
+        )}
+      </Container>
+    </ThemeProvider>
   )
 }

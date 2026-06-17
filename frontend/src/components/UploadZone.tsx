@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { Box, Paper, Typography } from '@mui/material'
+import { CloudUpload, Image as ImageIcon } from '@mui/icons-material'
 
 interface UploadZoneProps {
   onFile: (file: File) => void
@@ -10,9 +12,7 @@ interface UploadZoneProps {
 export default function UploadZone({ onFile, preview, file }: UploadZoneProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        onFile(acceptedFiles[0])
-      }
+      if (acceptedFiles.length > 0) onFile(acceptedFiles[0])
     },
     [onFile]
   )
@@ -24,28 +24,47 @@ export default function UploadZone({ onFile, preview, file }: UploadZoneProps) {
   })
 
   return (
-    <div
+    <Paper
       {...getRootProps()}
-      className={`upload-zone${isDragActive ? ' active' : ''}`}
+      variant="outlined"
+      sx={{
+        p: 3,
+        textAlign: 'center',
+        cursor: 'pointer',
+        border: '2px dashed',
+        borderColor: isDragActive ? 'primary.main' : 'divider',
+        bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+        transition: 'all 0.2s',
+        '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
+      }}
     >
       <input {...getInputProps()} />
+
       {preview && file ? (
-        <>
-          <img src={preview} alt="תצוגה מקדימה" className="upload-preview" />
-          <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#8888cc' }}>
-            {file.name}
-          </p>
-          <p>לחץ או גרור תמונה חדשה לכאן</p>
-        </>
+        <Box>
+          <Box
+            component="img"
+            src={preview}
+            alt="תצוגה מקדימה"
+            sx={{ maxHeight: 300, maxWidth: '100%', borderRadius: 1, mb: 1 }}
+          />
+          <Typography variant="body2" color="text.secondary">{file.name}</Typography>
+          <Typography variant="caption" color="text.disabled">לחץ או גרור תמונה חדשה</Typography>
+        </Box>
       ) : (
-        <>
-          <div className="upload-icon">🖼️</div>
-          <p>גרור תמונה לכאן או לחץ לבחירה</p>
-          <p style={{ fontSize: '0.85rem', color: '#666699', marginTop: '0.25rem' }}>
+        <Box>
+          {isDragActive
+            ? <CloudUpload sx={{ fontSize: 52, color: 'primary.main', mb: 1 }} />
+            : <ImageIcon sx={{ fontSize: 52, color: 'text.disabled', mb: 1 }} />
+          }
+          <Typography variant="h6" gutterBottom>
+            {isDragActive ? 'שחרר כאן' : 'גרור תמונה לכאן או לחץ לבחירה'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             PNG, JPG, JPEG, WEBP
-          </p>
-        </>
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Paper>
   )
 }
