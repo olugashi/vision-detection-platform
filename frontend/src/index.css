@@ -152,6 +152,8 @@ body {
 .badge-bus        { background-color: #8800FF; }
 .badge-motorcycle { background-color: #00AA00; }
 .badge-bicycle    { background-color: #00AAAA; }
+.badge-airplane   { background-color: #DCDC00; }
+.badge-boat       { background-color: #FF69B4; }
 .badge-default    { background-color: #555577; }
 
 /* Detection items */
@@ -200,4 +202,6 @@ body {
 .bar-bus        { background-color: #8800FF; }
 .bar-motorcycle { background-color: #00AA00; }
 .bar-bicycle    { background-color: #00AAAA; }
+.bar-airplane   { background-color: #DCDC00; }
+.bar-boat       { background-color: #FF69B4; }
 .bar-default    { background-color: #7777aa; }

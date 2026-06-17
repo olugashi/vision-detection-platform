@@ -14,15 +14,17 @@ router = APIRouter()
 model = YOLO("yolov8s.pt")
 
 # COCO class IDs to detect
-ALLOWED_CLASSES = {0, 1, 2, 3, 5, 7}
+ALLOWED_CLASSES = {0, 1, 2, 3, 4, 5, 7, 8}
 
 CLASS_NAMES = {
     0: "person",
     1: "bicycle",
     2: "car",
     3: "motorcycle",
+    4: "airplane",
     5: "bus",
     7: "truck",
+    8: "boat",
 }
 
 # BGR colors for each class
@@ -33,6 +35,8 @@ CLASS_COLORS = {
     "bus":        (255, 0,   136),  # #8800FF in BGR
     "motorcycle": (0,   170, 0),    # #00AA00 in BGR
     "bicycle":    (170, 170, 0),    # #00AAAA in BGR
+    "airplane":   (0,   220, 220),  # #DCDC00 in BGR
+    "boat":       (180, 105, 255),  # #FF69B4 in BGR
 }
 
 

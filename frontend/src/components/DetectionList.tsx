@@ -12,6 +12,8 @@ const CLASS_COLOR_MAP: Record<string, string> = {
   bus: 'bus',
   motorcycle: 'motorcycle',
   bicycle: 'bicycle',
+  airplane: 'airplane',
+  boat: 'boat',
 }
 
 function getColorKey(className: string): string {
