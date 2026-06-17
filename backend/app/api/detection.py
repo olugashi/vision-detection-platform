@@ -1,125 +1,85 @@
 import base64
-import io
+import os
 from collections import defaultdict
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, File, UploadFile
-from PIL import Image
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from ultralytics import YOLO
+
+from app.database import get_db
+from app.models import MediaFile
+from app.schemas import BBox, Detection, DetectImageRequest, DetectImageResponse
 
 router = APIRouter()
 
-# Module-level singleton: load model once at startup
 model = YOLO("yolov8s.pt")
 
-# COCO class IDs to detect
-ALLOWED_CLASSES = {0, 1, 2, 3, 4, 5, 7, 8}
-
-CLASS_NAMES = {
-    0: "person",
-    1: "bicycle",
-    2: "car",
-    3: "motorcycle",
-    4: "airplane",
-    5: "bus",
-    7: "truck",
-    8: "boat",
+CLASS_INFO: dict[int, tuple[str, tuple[int, int, int]]] = {
+    0: ("person",     (68,  68,  255)),
+    1: ("bicycle",    (170, 170, 0)),
+    2: ("car",        (255, 68,  68)),
+    3: ("motorcycle", (0,   170, 0)),
+    4: ("airplane",   (0,   220, 220)),
+    5: ("bus",        (255, 0,   136)),
+    7: ("truck",      (0,   136, 255)),
+    8: ("boat",       (180, 105, 255)),
 }
-
-# BGR colors for each class
-CLASS_COLORS = {
-    "person":     (68,  68,  255),  # #FF4444 in BGR
-    "car":        (255, 68,  68),   # #4444FF in BGR
-    "truck":      (0,   136, 255),  # #FF8800 in BGR
-    "bus":        (255, 0,   136),  # #8800FF in BGR
-    "motorcycle": (0,   170, 0),    # #00AA00 in BGR
-    "bicycle":    (170, 170, 0),    # #00AAAA in BGR
-    "airplane":   (0,   220, 220),  # #DCDC00 in BGR
-    "boat":       (180, 105, 255),  # #FF69B4 in BGR
-}
+ALLOWED_CLASSES = set(CLASS_INFO.keys())
 
 
-@router.post("/detect/image")
-async def detect_image(file: UploadFile = File(...)):
-    # Read and decode uploaded image
-    contents = await file.read()
-    pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
-    img_array = np.array(pil_image)
-    # Convert RGB -> BGR for OpenCV
-    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+@router.post("/detect/image", response_model=DetectImageResponse)
+def detect_image(req: DetectImageRequest, db: Session = Depends(get_db)):
+    record = db.query(MediaFile).filter(MediaFile.id == req.media_id).first()
+    if not record or not os.path.exists(record.file_path):
+        raise HTTPException(status_code=404, detail="קובץ לא נמצא")
 
-    # Run YOLOv8 inference
-    results = model(img_bgr, conf=0.5)
+    img_bgr = cv2.imread(record.file_path)
+    if img_bgr is None:
+        raise HTTPException(status_code=422, detail="לא ניתן לקרוא את התמונה")
 
-    detections = []
+    results = model(img_bgr, conf=req.confidence_threshold)
+
+    detections: list[Detection] = []
     counts_by_class: dict[str, int] = defaultdict(int)
 
     for result in results:
-        boxes = result.boxes
-        if boxes is None:
+        if result.boxes is None:
             continue
-        for box in boxes:
+        for box in result.boxes:
             cls_id = int(box.cls[0].item())
             if cls_id not in ALLOWED_CLASSES:
                 continue
 
-            class_name = CLASS_NAMES[cls_id]
+            class_name, color = CLASS_INFO[cls_id]
             confidence = float(box.conf[0].item())
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            x1, y1, x2, y2 = (int(v) for v in box.xyxy[0].tolist())
 
-            detections.append({
-                "class_name": class_name,
-                "confidence": round(confidence, 4),
-                "bbox": {
-                    "x": x1,
-                    "y": y1,
-                    "width": x2 - x1,
-                    "height": y2 - y1,
-                },
-            })
+            detections.append(Detection(
+                class_id=cls_id,
+                class_name=class_name,
+                confidence=round(confidence, 4),
+                bbox=BBox(x=x1, y=y1, width=x2 - x1, height=y2 - y1),
+            ))
             counts_by_class[class_name] += 1
 
-            # Draw bounding box
-            color = CLASS_COLORS[class_name]
             cv2.rectangle(img_bgr, (x1, y1), (x2, y2), color, 2)
 
-            # Label text
             label = f"{class_name} {int(confidence * 100)}%"
-            (text_w, text_h), baseline = cv2.getTextSize(
-                label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1
-            )
-            label_y1 = max(y1, text_h + baseline + 4)
+            (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
+            label_y = max(y1, th + baseline + 4)
+            cv2.rectangle(img_bgr, (x1, label_y - th - baseline - 4), (x1 + tw + 4, label_y), color, cv2.FILLED)
+            cv2.putText(img_bgr, label, (x1 + 2, label_y - baseline - 2),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
 
-            # Filled rectangle for label background
-            cv2.rectangle(
-                img_bgr,
-                (x1, label_y1 - text_h - baseline - 4),
-                (x1 + text_w + 4, label_y1),
-                color,
-                cv2.FILLED,
-            )
+    _, buf = cv2.imencode(".jpg", img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    annotated_b64 = base64.b64encode(buf).decode("utf-8")
 
-            # White text
-            cv2.putText(
-                img_bgr,
-                label,
-                (x1 + 2, label_y1 - baseline - 2),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (255, 255, 255),
-                1,
-                cv2.LINE_AA,
-            )
-
-    # Encode annotated image to JPEG base64 (no data: prefix)
-    _, buffer = cv2.imencode(".jpg", img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 90])
-    annotated_b64 = base64.b64encode(buffer).decode("utf-8")
-
-    return {
-        "detections": detections,
-        "annotated_image": annotated_b64,
-        "total_count": len(detections),
-        "counts_by_class": dict(counts_by_class),
-    }
+    return DetectImageResponse(
+        media_id=req.media_id,
+        detections=detections,
+        annotated_image=annotated_b64,
+        total_count=len(detections),
+        counts_by_class=dict(counts_by_class),
+    )

@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import detection
+from app.database import engine
+from app import models
+from app.api import detection, media
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Vision Detection API")
 
@@ -12,4 +16,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(media.router, prefix="/api")
 app.include_router(detection.router, prefix="/api")

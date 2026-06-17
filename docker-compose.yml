@@ -6,6 +6,9 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - ./uploads:/app/uploads
+      - ./app.db:/app/app.db
   frontend:
     build: ./frontend
     ports:

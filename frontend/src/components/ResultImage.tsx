@@ -6,8 +6,8 @@ interface ResultImageProps {
 
 export default function ResultImage({ base64 }: ResultImageProps) {
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle2" color="text.secondary" mb={1}>
+    <Paper variant="outlined" sx={{ p: 1.5 }}>
+      <Typography variant="caption" color="text.secondary" display="block" mb={1}>
         תמונה עם זיהויים
       </Typography>
       <Box

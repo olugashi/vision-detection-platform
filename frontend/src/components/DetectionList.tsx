@@ -1,12 +1,5 @@
-import {
-  Box,
-  Chip,
-  LinearProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
-import { Detection } from '../App'
+import { Box, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material'
+import { Detection } from '../types'
 
 interface DetectionListProps {
   detections: Detection[]
@@ -15,23 +8,23 @@ interface DetectionListProps {
 
 const CLASS_COLORS: Record<string, string> = {
   person:     '#FF4444',
-  car:        '#4444FF',
-  truck:      '#FF8800',
-  bus:        '#8800FF',
-  motorcycle: '#00AA00',
   bicycle:    '#00AAAA',
+  car:        '#4444FF',
+  motorcycle: '#00AA00',
   airplane:   '#DCDC00',
+  bus:        '#8800FF',
+  truck:      '#FF8800',
   boat:       '#FF69B4',
 }
 
 const CLASS_LABELS: Record<string, string> = {
   person:     'אדם',
-  car:        'רכב',
-  truck:      'משאית',
-  bus:        'אוטובוס',
-  motorcycle: 'אופנוע',
   bicycle:    'אופניים',
+  car:        'רכב',
+  motorcycle: 'אופנוע',
   airplane:   'מטוס',
+  bus:        'אוטובוס',
+  truck:      'משאית',
   boat:       'סירה',
 }
 
@@ -46,23 +39,17 @@ export default function DetectionList({ detections, counts_by_class }: Detection
         זיהויים ({detections.length})
       </Typography>
 
-      {/* Class count chips */}
       <Stack direction="row" flexWrap="wrap" gap={1} mb={3}>
         {Object.entries(counts_by_class).map(([cls, count]) => (
           <Chip
             key={cls}
             label={`${CLASS_LABELS[cls] ?? cls} × ${count}`}
             size="small"
-            sx={{
-              bgcolor: colorFor(cls),
-              color: '#fff',
-              fontWeight: 600,
-            }}
+            sx={{ bgcolor: colorFor(cls), color: '#fff', fontWeight: 600 }}
           />
         ))}
       </Stack>
 
-      {/* Detection list */}
       {detections.length === 0 ? (
         <Typography color="text.disabled" variant="body2">לא נמצאו זיהויים.</Typography>
       ) : (
@@ -70,7 +57,6 @@ export default function DetectionList({ detections, counts_by_class }: Detection
           {detections.map((det, idx) => {
             const pct = Math.round(det.confidence * 100)
             const color = colorFor(det.class_name)
-            const label = CLASS_LABELS[det.class_name] ?? det.class_name
             return (
               <Box
                 key={idx}
@@ -82,7 +68,9 @@ export default function DetectionList({ detections, counts_by_class }: Detection
                 }}
               >
                 <Box display="flex" justifyContent="space-between" mb={0.5}>
-                  <Typography variant="body2" fontWeight={600}>{label}</Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {CLASS_LABELS[det.class_name] ?? det.class_name}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">{pct}%</Typography>
                 </Box>
                 <LinearProgress

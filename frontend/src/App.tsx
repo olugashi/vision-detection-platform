@@ -1,19 +1,20 @@
-import { useState } from 'react'
-import axios from 'axios'
+import { useEffect, useState } from 'react'
 import {
   Box,
-  CircularProgress,
   Container,
   CssBaseline,
+  Divider,
   Grid,
   ThemeProvider,
   Typography,
   createTheme,
 } from '@mui/material'
 import { CenterFocusStrong } from '@mui/icons-material'
+import { listMedia, deleteMedia } from './api/mediaApi'
+import { MediaFile } from './types'
 import UploadZone from './components/UploadZone'
-import ResultImage from './components/ResultImage'
-import DetectionList from './components/DetectionList'
+import MediaGallery from './components/MediaGallery'
+import DetectionPanel from './components/DetectionPanel'
 
 const theme = createTheme({
   palette: {
@@ -24,52 +25,33 @@ const theme = createTheme({
   direction: 'rtl',
 })
 
-export interface BBox {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-export interface Detection {
-  class_name: string
-  confidence: number
-  bbox: BBox
-}
-
-export interface DetectionResult {
-  detections: Detection[]
-  annotated_image: string
-  total_count: number
-  counts_by_class: Record<string, number>
-}
-
 export default function App() {
-  const [file, setFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<DetectionResult | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [files, setFiles] = useState<MediaFile[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const handleFile = async (selected: File) => {
-    setFile(selected)
-    setResult(null)
-    setError(null)
-    setPreview(URL.createObjectURL(selected))
-    setLoading(true)
+  const loadFiles = async () => {
     try {
-      const formData = new FormData()
-      formData.append('file', selected)
-      const response = await axios.post<DetectionResult>(
-        'http://localhost:8000/api/detect/image',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      )
-      setResult(response.data)
+      const res = await listMedia()
+      setFiles(res.data)
     } catch {
-      setError('שגיאה בזיהוי. ודא שה-backend פועל.')
-    } finally {
-      setLoading(false)
+      // backend not ready yet
+    }
+  }
+
+  useEffect(() => { loadFiles() }, [])
+
+  const handleUploaded = (file: MediaFile) => {
+    setFiles((prev) => [file, ...prev])
+    setSelectedId(file.id)
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMedia(id)
+      setFiles((prev) => prev.filter((f) => f.id !== id))
+      if (selectedId === id) setSelectedId(null)
+    } catch {
+      // ignore
     }
   }
 
@@ -77,7 +59,6 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header */}
         <Box display="flex" alignItems="center" gap={1.5} mb={4}>
           <CenterFocusStrong sx={{ fontSize: 36, color: 'primary.main' }} />
           <Typography variant="h4" fontWeight={700}>
@@ -85,36 +66,41 @@ export default function App() {
           </Typography>
         </Box>
 
-        {/* Upload */}
-        <UploadZone onFile={handleFile} preview={preview} file={file} />
-
-        {/* Loading */}
-        {loading && (
-          <Box display="flex" alignItems="center" justifyContent="center" gap={2} mt={4}>
-            <CircularProgress size={28} />
-            <Typography color="text.secondary">מזהה אובייקטים...</Typography>
-          </Box>
-        )}
-
-        {/* Error */}
-        {error && !loading && (
-          <Typography color="error" mt={3} textAlign="center">{error}</Typography>
-        )}
-
-        {/* Results */}
-        {result && !loading && (
-          <Grid container spacing={3} mt={1}>
-            <Grid item xs={12} md={8}>
-              <ResultImage base64={result.annotated_image} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <DetectionList
-                detections={result.detections}
-                counts_by_class={result.counts_by_class}
-              />
-            </Grid>
+        <Grid container spacing={3}>
+          {/* Left: upload + gallery */}
+          <Grid item xs={12} md={4}>
+            <UploadZone onUploaded={handleUploaded} />
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>
+              תמונות שהועלו
+            </Typography>
+            <MediaGallery
+              files={files}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onDelete={handleDelete}
+            />
           </Grid>
-        )}
+
+          {/* Right: detection */}
+          <Grid item xs={12} md={8}>
+            {selectedId ? (
+              <DetectionPanel key={selectedId} mediaId={selectedId} />
+            ) : (
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                height={300}
+                sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}
+              >
+                <Typography color="text.disabled">
+                  העלה תמונה ובחר אותה כדי להתחיל זיהוי
+                </Typography>
+              </Box>
+            )}
+          </Grid>
+        </Grid>
       </Container>
     </ThemeProvider>
   )
