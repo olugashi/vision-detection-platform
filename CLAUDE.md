@@ -7,6 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Full stack (recommended)
 docker compose up --build
+# Services: postgres, redis, backend, worker (Celery), frontend
+```
+
+```bash
+# Full stack (recommended)
+docker compose up --build
 
 # Backend only (local dev, from backend/)
 pip install -r requirements.txt
@@ -26,10 +32,16 @@ npm run dev
 **Single-feature app** — upload an image, get back the same image annotated with bounding boxes + a JSON list of detections.
 
 ```
-backend/app/api/detection.py   ← all detection logic (single file)
-backend/app/main.py            ← FastAPI app + CORS middleware
-frontend/src/App.tsx           ← state, API call, layout
-frontend/src/components/       ← UploadZone, ResultImage, DetectionList
+backend/app/api/detection.py        ← detect/image endpoint
+backend/app/api/media.py            ← upload/list/get/delete
+backend/app/api/training.py         ← annotate, auto-annotate, train, models
+backend/app/services/model_manager.py ← YOLO singleton + hot-swap
+backend/app/services/training_service.py ← dataset export + YOLOv8 train
+backend/celery_worker.py            ← Celery app + training task
+backend/app/models.py               ← MediaFile, Annotation, MLModel, TrainingJob
+frontend/src/App.tsx                ← top-level nav (Detection / Training)
+frontend/src/pages/TrainingPage.tsx ← תיוג + אימון + מודלים
+frontend/src/components/training/   ← AnnotationCanvas, TrainingProgress, ModelList
 ```
 
 ### Detection flow

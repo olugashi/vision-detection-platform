@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
-  Box,
-  Container,
-  CssBaseline,
-  Divider,
-  Grid,
-  ThemeProvider,
-  Typography,
-  createTheme,
+  Box, Container, CssBaseline, Tab, Tabs,
+  ThemeProvider, Typography, createTheme,
 } from '@mui/material'
-import { CenterFocusStrong } from '@mui/icons-material'
+import { CenterFocusStrong, ModelTraining } from '@mui/icons-material'
+import { useEffect } from 'react'
 import { listMedia, deleteMedia } from './api/mediaApi'
-import { MediaFile } from './types'
+import { MediaFile, DetectionResult } from './types'
 import UploadZone from './components/UploadZone'
 import MediaGallery from './components/MediaGallery'
 import DetectionPanel from './components/DetectionPanel'
+import TrainingPage from './pages/TrainingPage'
+import { Divider, Grid } from '@mui/material'
 
 const theme = createTheme({
   palette: {
@@ -26,16 +23,14 @@ const theme = createTheme({
 })
 
 export default function App() {
+  const [page, setPage] = useState(0)
+
+  // Detection state
   const [files, setFiles] = useState<MediaFile[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const loadFiles = async () => {
-    try {
-      const res = await listMedia()
-      setFiles(res.data)
-    } catch {
-      // backend not ready yet
-    }
+    try { setFiles((await listMedia()).data) } catch {}
   }
 
   useEffect(() => { loadFiles() }, [])
@@ -50,57 +45,57 @@ export default function App() {
       await deleteMedia(id)
       setFiles((prev) => prev.filter((f) => f.id !== id))
       if (selectedId === id) setSelectedId(null)
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box display="flex" alignItems="center" gap={1.5} mb={4}>
+        {/* Header */}
+        <Box display="flex" alignItems="center" gap={1.5} mb={3}>
           <CenterFocusStrong sx={{ fontSize: 36, color: 'primary.main' }} />
-          <Typography variant="h4" fontWeight={700}>
-            מערכת זיהוי אובייקטים
-          </Typography>
+          <Typography variant="h4" fontWeight={700}>מערכת זיהוי אובייקטים</Typography>
         </Box>
 
-        <Grid container spacing={3}>
-          {/* Left: upload + gallery */}
-          <Grid item xs={12} md={4}>
-            <UploadZone onUploaded={handleUploaded} />
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" color="text.secondary" mb={1}>
-              תמונות שהועלו
-            </Typography>
-            <MediaGallery
-              files={files}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onDelete={handleDelete}
-            />
-          </Grid>
+        {/* Top-level navigation */}
+        <Tabs value={page} onChange={(_, v) => setPage(v)} sx={{ mb: 4, borderBottom: 1, borderColor: 'divider' }}>
+          <Tab icon={<CenterFocusStrong />} iconPosition="start" label="זיהוי" />
+          <Tab icon={<ModelTraining />} iconPosition="start" label="אימון מודל" />
+        </Tabs>
 
-          {/* Right: detection */}
-          <Grid item xs={12} md={8}>
-            {selectedId ? (
-              <DetectionPanel key={selectedId} mediaId={selectedId} />
-            ) : (
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                height={300}
-                sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}
-              >
-                <Typography color="text.disabled">
-                  העלה תמונה ובחר אותה כדי להתחיל זיהוי
-                </Typography>
-              </Box>
-            )}
+        {/* Detection Page */}
+        {page === 0 && (
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <UploadZone onUploaded={handleUploaded} />
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle2" color="text.secondary" mb={1}>תמונות שהועלו</Typography>
+              <MediaGallery
+                files={files}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onDelete={handleDelete}
+              />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              {selectedId ? (
+                <DetectionPanel key={selectedId} mediaId={selectedId} />
+              ) : (
+                <Box
+                  display="flex" alignItems="center" justifyContent="center"
+                  height={300}
+                  sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}
+                >
+                  <Typography color="text.disabled">העלה תמונה ובחר אותה כדי להתחיל זיהוי</Typography>
+                </Box>
+              )}
+            </Grid>
           </Grid>
-        </Grid>
+        )}
+
+        {/* Training Page */}
+        {page === 1 && <TrainingPage />}
       </Container>
     </ThemeProvider>
   )

@@ -1,4 +1,5 @@
 version: '3.9'
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -11,6 +12,11 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   backend:
     build: ./backend
     ports:
@@ -18,10 +24,31 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=postgresql://admin:password@postgres:5432/detection_db
+      - REDIS_URL=redis://redis:6379
     volumes:
       - ./uploads:/app/uploads
+      - ./ml:/app/ml
+      - ./datasets:/app/datasets
     depends_on:
       - postgres
+      - redis
+
+  worker:
+    build: ./backend
+    command: celery -A celery_worker worker --loglevel=info
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/detection_db
+      - REDIS_URL=redis://redis:6379
+      - MODELS_DIR=/app/ml/weights
+      - DATASETS_DIR=/app/datasets
+    volumes:
+      - ./uploads:/app/uploads
+      - ./ml:/app/ml
+      - ./datasets:/app/datasets
+    depends_on:
+      - postgres
+      - redis
 
   frontend:
     build: ./frontend

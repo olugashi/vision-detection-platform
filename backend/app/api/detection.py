@@ -6,15 +6,12 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ultralytics import YOLO
-
 from app.database import get_db
 from app.models import MediaFile
 from app.schemas import BBox, Detection, DetectImageRequest, DetectImageResponse
+from app.services.model_manager import get_model
 
 router = APIRouter()
-
-model = YOLO("yolov8s.pt")
 
 CLASS_INFO: dict[int, tuple[str, tuple[int, int, int]]] = {
     0: ("person",     (68,  68,  255)),
@@ -39,7 +36,7 @@ def detect_image(req: DetectImageRequest, db: Session = Depends(get_db)):
     if img_bgr is None:
         raise HTTPException(status_code=422, detail="לא ניתן לקרוא את התמונה")
 
-    results = model(img_bgr, conf=req.confidence_threshold)
+    results = get_model()(img_bgr, conf=req.confidence_threshold)
 
     detections: list[Detection] = []
     counts_by_class: dict[str, int] = defaultdict(int)
