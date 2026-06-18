@@ -9,6 +9,7 @@
 | npm | 9.x | מגיע עם Node.js |
 | Docker Desktop | 24.x | עדכני |
 | Docker Compose | 2.x | מגיע עם Docker Desktop |
+| PostgreSQL | 16 | 16-alpine (דרך Docker) |
 
 ---
 
@@ -100,7 +101,8 @@ uvicorn app.main:app --reload --port 8000
 | opencv-python-headless | 4.9.0.80 | עיבוד תמונות |
 | pillow | עדכני | קריאת קבצי תמונה |
 | numpy | עדכני | מטריצות נומריות |
-| sqlalchemy | 2.0.0 | ORM ל-SQLite |
+| sqlalchemy | 2.0.0 | ORM ל-PostgreSQL |
+| psycopg2-binary | 2.9.9 | PostgreSQL driver |
 | python-multipart | עדכני | העלאת קבצים |
 | aiofiles | עדכני | קריאת קבצים א-סינכרונית |
 
