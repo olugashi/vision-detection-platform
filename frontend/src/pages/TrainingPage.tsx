@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import { AutoFixHigh, FitnessCenterOutlined, ModelTraining } from '@mui/icons-material'
 
-import { listMedia, getMediaUrl } from '../api/mediaApi'
+import { listMedia, getMediaUrl, deleteMedia } from '../api/mediaApi'
 import {
   getAnnotations, saveAnnotations, autoAnnotate,
   startTraining, listJobs, listModels,
@@ -146,7 +146,6 @@ export default function TrainingPage() {
               selectedId={selectedId}
               onSelect={handleSelectImage}
               onDelete={async (id) => {
-                const { deleteMedia } = await import('../api/mediaApi')
                 await deleteMedia(id)
                 setFiles((p) => p.filter((f) => f.id !== id))
                 if (selectedId === id) { setSelectedId(null); setBoxes([]) }

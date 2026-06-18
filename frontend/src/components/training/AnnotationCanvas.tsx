@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { Stage, Layer, Image as KonvaImage, Rect, Text } from 'react-konva'
 import useImage from 'use-image'
 import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
@@ -30,6 +30,10 @@ interface Props {
 export default function AnnotationCanvas({ imageUrl, initialBoxes, onChange }: Props) {
   const [image, status] = useImage(imageUrl, 'anonymous')
   const [boxes, setBoxes] = useState<DrawingBox[]>(initialBoxes)
+
+  useEffect(() => {
+    setBoxes(initialBoxes)
+  }, [initialBoxes])
   const [drawing, setDrawing] = useState<{ x: number; y: number } | null>(null)
   const [current, setCurrent] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const [selectedClass, setSelectedClass] = useState(0)
@@ -191,5 +195,3 @@ export default function AnnotationCanvas({ imageUrl, initialBoxes, onChange }: P
   )
 }
 
-// Need React in scope for Fragment
-import React from 'react'

@@ -18,20 +18,9 @@ from app.schemas import (
     TrainingJobOut,
 )
 from app.services.model_manager import get_model, swap_model
+from app.class_info import ALLOWED_CLASSES
 
 router = APIRouter()
-
-ALLOWED_CLASSES = {0, 1, 2, 3, 4, 5, 7, 8}
-CLASS_INFO = {
-    0: "person",
-    1: "bicycle",
-    2: "car",
-    3: "motorcycle",
-    4: "airplane",
-    5: "bus",
-    7: "truck",
-    8: "boat",
-}
 
 
 # ── Annotations ───────────────────────────────────────────────

@@ -1,27 +1,18 @@
 import os
 import shutil
-import uuid
+import cv2
 import random
 import yaml
 from datetime import datetime
 
 from sqlalchemy.orm import Session
 from app.models import Annotation, MediaFile, MLModel, TrainingJob
-from app.services.model_manager import get_model, swap_model
+from app.services.model_manager import get_model
+from app.class_info import CLASS_NAMES
 
 MODELS_DIR = os.getenv("MODELS_DIR", "./ml/weights")
 DATASETS_DIR = os.getenv("DATASETS_DIR", "./datasets")
 
-CLASS_NAMES = {
-    0: "person",
-    1: "bicycle",
-    2: "car",
-    3: "motorcycle",
-    4: "airplane",
-    5: "bus",
-    7: "truck",
-    8: "boat",
-}
 # Remap sparse COCO IDs to consecutive dataset IDs
 COCO_TO_IDX = {coco_id: idx for idx, coco_id in enumerate(sorted(CLASS_NAMES.keys()))}
 IDX_TO_NAME = [CLASS_NAMES[coco_id] for coco_id in sorted(CLASS_NAMES.keys())]
@@ -64,7 +55,6 @@ def export_dataset(db: Session, job_id: str) -> str:
         shutil.copy2(media.file_path, dst_img)
 
         # Read image size for normalization
-        import cv2
         img = cv2.imread(media.file_path)
         if img is None:
             continue
