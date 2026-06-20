@@ -9,9 +9,10 @@ from sqlalchemy.orm import Session
 from app.models import Annotation, MediaFile, MLModel, TrainingJob
 from app.services.model_manager import get_model
 from app.class_info import CLASS_NAMES
+from app.config import settings
 
-MODELS_DIR = os.getenv("MODELS_DIR", "./ml/weights")
-DATASETS_DIR = os.getenv("DATASETS_DIR", "./datasets")
+MODELS_DIR = settings.models_dir
+DATASETS_DIR = settings.datasets_dir
 
 # Remap sparse COCO IDs to consecutive dataset IDs
 COCO_TO_IDX = {coco_id: idx for idx, coco_id in enumerate(sorted(CLASS_NAMES.keys()))}
@@ -84,12 +85,12 @@ def export_dataset(db: Session, job_id: str) -> str:
     return dataset_path
 
 
-def run_training(job_id: str, db_url: str, epochs: int) -> None:
+def run_training(job_id: str, epochs: int) -> None:
     """Runs in Celery worker. Updates job progress in DB."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    engine = create_engine(db_url)
+    engine = create_engine(settings.database_url)
     Session = sessionmaker(bind=engine)
     db = Session()
 

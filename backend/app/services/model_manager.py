@@ -1,8 +1,9 @@
 import threading
 from ultralytics import YOLO
+from app.config import settings
 
 _lock = threading.Lock()
-_model: YOLO = YOLO("yolov8s.pt")
+_model: YOLO = YOLO(settings.yolo_model)
 
 
 def get_model() -> YOLO:

@@ -11,3 +11,4 @@ aiofiles
 celery==5.3.6
 redis==5.0.1
 pyyaml
+pydantic-settings==2.2.1
