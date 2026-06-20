@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import MediaFile
 from app.schemas import MediaFileOut
+from app.config import settings
 
 router = APIRouter()
 
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
+UPLOAD_DIR = settings.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
